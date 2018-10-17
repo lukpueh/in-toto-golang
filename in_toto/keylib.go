@@ -76,7 +76,7 @@ func VerifySignature(key Key, sig Signature, data []byte) {
 
   // SecSysLib uses a SaltLength of `hashes.SHA256().digest_size`, i.e. 32
   result := rsa.VerifyPSS(rsaPub, crypto.SHA256, hashed[:], sigHex,
-    &rsa.PSSOptions{SaltLength: 32, Hash: crypto.SHA256})
+    &rsa.PSSOptions{SaltLength: sha256.Size, Hash: crypto.SHA256})
 
   if result != nil {
     panic("Signature verification failed")
