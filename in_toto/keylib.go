@@ -1,6 +1,7 @@
 package main
 
 import (
+  "os"
   "fmt"
   "encoding/pem"
   "encoding/hex"
@@ -30,9 +31,21 @@ type Signature struct {
   Sig string `json:"sig"`
 }
 
-// func (k *Key) Load(path string) {
+func (k *Key) Load(path string) {
+  keyFile, _ := os.Open(path)
+  keyBytes, _ := ioutil.ReadAll(keyFile)
 
-// }
+  // data, _ := pem.Decode([]byte(keyBytes))
+
+  // data.Bytes
+  k.KeyType = "rsa"
+  k.Scheme = "rsassa-pss-sha256"
+  k.KeyIdHashAlgorithms = []string{"sha256", "sha512"}
+  k.KeyVal = KeyVal{Public: string(keyBytes)}
+  k.KeyId = "556caebdc0877eed53d419b60eddb1e57fa773e4e31d70698b588f3e9cc48b35"
+
+  defer keyFile.Close()
+}
 
 func VerifySignature(key Key, sig Signature, data []byte) {
   // Create rsa.PublicKey object from DER encoded public key string as
