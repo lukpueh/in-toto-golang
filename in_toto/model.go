@@ -4,7 +4,9 @@ import (
   "os"
   "io/ioutil"
   "encoding/json"
-  "github.com/gibson042/canonicaljson-go"
+  // "github.com/gibson042/canonicaljson-go"
+  // canonicaljson "github.com/docker/go/canonical/json"
+
 )
 
 type Link struct {
@@ -44,8 +46,8 @@ type Layout struct {
   Steps []Step `json:"steps"`
   Inspect []Inspection `json:"inspect"`
   Keys map[string]Key `json:"keys"`
-  expires string `json:"expires"`
-  readme string `json:"readme"`
+  Expires string `json:"expires"`
+  Readme string `json:"readme"`
 }
 
 type Metablock struct {
@@ -101,8 +103,7 @@ func (mb *Metablock) Load(path string) {
 
 
 func (mb *Metablock) GetSignableRepresentation() []byte {
-  jsonCanoncial, _ := canonicaljson.Marshal(mb.Signed)
-  return jsonCanoncial
+  return encode_canonical(mb.Signed)
 }
 
 

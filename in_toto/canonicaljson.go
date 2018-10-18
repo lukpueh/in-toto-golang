@@ -1,29 +1,17 @@
 package main
 
 import (
-  "os"
   "fmt"
   "sort"
   "regexp"
   "bytes"
   "encoding/json"
+  "reflect"
+  "strconv"
 )
 
-
-type A struct {
-  B int `json:"b"`
-  C string `json:"c"`
-  D bool `json:"d"`
-  E bool `json:"e"`
-  F interface{} `json:"f"`
-}
-
-type X struct {
-  Y A `json:"y"`
-}
-
 func _encode_canonical_string(s string) string  {
-  re := regexp.MustCompile(`([\"])`)
+  re := regexp.MustCompile(`([\"\\])`)
   return fmt.Sprintf("\"%s\"", re.ReplaceAllString(s, "\\$1"))
 }
 
@@ -39,8 +27,13 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) {
         result.WriteString("false")
       }
 
-    case int:
-      result.WriteString(string(objAsserted))
+    // Golang's JSON decoder that we always use reads before doing
+    // canonicalization stores alls JSON numbers as float64 so it is safe to
+    // only expect float64 Also securesystemslib only does ints in
+    // canonicalization, so it is safe to convert the float to an int before
+    // writing its ASCII representation
+    case float64:
+      result.WriteString(strconv.Itoa(int(objAsserted)))
 
     case nil:
       result.WriteString("null")
@@ -79,33 +72,22 @@ func _encode_canonical(obj interface{}, result *bytes.Buffer) {
       }
       result.WriteString("}")
     default:
-      fmt.Println(objAsserted, "is of a type I don't know how to handle")
+      fmt.Println("I don't handle", objAsserted, "of type", reflect.TypeOf(objAsserted))
   }
 
 }
 
 
-func encode_canonical(obj interface{}) {
+func encode_canonical(obj interface{}) []byte {
+  // FIXME: Terrible hack to turn the passed struct into a map, converting
+  // the struct's variable names to the json key names defined in the struct
+  data, _ := json.Marshal(obj)
+  var jsonMap interface{}
+  json.Unmarshal(data, &jsonMap)
+
+  // Create a buffer and write the canonicalized JSON bytes to it
   var result bytes.Buffer
-  _encode_canonical(obj, &result)
+  _encode_canonical(jsonMap, &result)
 
-  result.WriteTo(os.Stdout)
-}
-
-
-func main() {
-
-  x := X{Y: A{B: 1, C: "yyy\n", D: true, E: false, F: nil}}
-  data, _ := json.Marshal(x)
-
-
-  var json_map interface{}
-
-  json.Unmarshal(data, &json_map)
-
-  encode_canonical(json_map)
-
-
-
-
+  return result.Bytes()
 }
